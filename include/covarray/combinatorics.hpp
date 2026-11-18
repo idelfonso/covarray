@@ -6,7 +6,8 @@ namespace covarray {
 
 // Multiplicative formula: result stays an exact integer after each step,
 // so this avoids the overflow a naive n!/(k!(n-k)!) would hit much sooner.
-[[nodiscard]] constexpr auto binomial(unsigned n, unsigned k) noexcept -> std::uint64_t {
+[[nodiscard]] constexpr auto binomial(unsigned n, unsigned k) noexcept
+    -> std::uint64_t {
     if (k > n) {
         return 0;
     }

@@ -21,7 +21,8 @@ TEST(Binomial, BaseCases) {
 TEST(Binomial, Symmetric) {
     for (unsigned n = 0; n <= 20; ++n) {
         for (unsigned k = 0; k <= n; ++k) {
-            EXPECT_EQ(binomial(n, k), binomial(n, n - k)) << "n=" << n << " k=" << k;
+            EXPECT_EQ(binomial(n, k), binomial(n, n - k))
+                << "n=" << n << " k=" << k;
         }
     }
 }
@@ -29,8 +30,10 @@ TEST(Binomial, Symmetric) {
 TEST(Binomial, PascalsRule) {
     for (unsigned n = 1; n <= 20; ++n) {
         for (unsigned k = 1; k < n; ++k) {
-            EXPECT_EQ(binomial(n, k), binomial(n - 1, k - 1) + binomial(n - 1, k))
-                << "n=" << n << " k=" << k;
+            EXPECT_EQ(
+                binomial(n, k), binomial(n - 1, k - 1) + binomial(n - 1, k)
+            ) << "n="
+              << n << " k=" << k;
         }
     }
 }

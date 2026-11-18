@@ -2,6 +2,8 @@
 
 namespace covarray {
 
-auto version() noexcept -> const char* { return "0.1.0"; }
+auto version() noexcept -> const char* {
+    return "0.1.0";
+}
 
-}  // namespace covarray
+} // namespace covarray

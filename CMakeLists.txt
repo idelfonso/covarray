@@ -42,3 +42,9 @@ target_include_directories(
 )
 target_compile_features(covarray PUBLIC cxx_std_23)
 target_link_libraries(covarray PRIVATE covarray_warnings)
+
+option(COVARRAY_BUILD_TESTS "Build tests" ${PROJECT_IS_TOP_LEVEL})
+if(COVARRAY_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

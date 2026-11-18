@@ -1,16 +1,16 @@
 # covarray
- 
+
 **covarray** is a library for constructing, verifying and working with
-[covering arrays](https://en.wikipedia.org/wiki/Covering_array), the combinatorial
+[covering arrays](https://math.nist.gov/coveringarrays/coveringarray.html), the combinatorial
 designs behind pairwise and t-way software testing. The core is written in modern
 C++ (C++23), with a Python package on top, a command-line tool and, later, a
 network API.
- 
+
 > **Status: early development.** The repository is being set up; there is nothing
 > to install or use yet. The roadmap below shows what is coming and when.
- 
+
 ## Goals
- 
+
 - **Verify** covering arrays fast: count and list missing t-tuples, report coverage.
 - **Construct** covering arrays with algebraic methods (orthogonal arrays over
   finite fields, CPHF-based constructions), greedy methods (IPOG) and
@@ -21,7 +21,7 @@ network API.
 - **Engineer it properly:** tests, sanitizers, static analysis and measured
   performance from day one.
 ## Roadmap
- 
+
 | Phase | Target release | Focus |
 | --- | --- | --- |
 | P0 | Jan 2027 | Repository, build system, CI |
@@ -34,22 +34,21 @@ network API.
 | P7 | v0.7.0 (Jun 2027) | gRPC and REST services, cloud deployment |
 | P8 | v0.8.0 (Jul 2027) | ML-based method selection |
 | P9 | v1.0.0 (Jul 2027) | Stable API, packaging, documentation |
- 
+
 Progress is tracked in the [project board](https://github.com/idelfonso/covarray/projects)
 and the [milestones](https://github.com/idelfonso/covarray/milestones).
- 
+
 ## Development
- 
+
 The project is developed in a VS Code dev container (see `.devcontainer/`), which
 provides GCC 16, Clang 23, CMake, Ninja and the rest of the toolchain. Build and
 test instructions will be added here as soon as the first code lands.
- 
+
 ## Contributing
- 
+
 The project is not ready for outside contributions yet. Questions and ideas are
 welcome in [Discussions](https://github.com/idelfonso/covarray/discussions).
- 
+
 ## License
- 
+
 Licensed under the [Apache License 2.0](LICENSE).
- 

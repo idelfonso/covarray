@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
+jobs:
+  build-test:
+    name: build-test (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc-16
+            cc: gcc-16
+            cxx: g++-16
+          - compiler: clang-23
+            cc: clang-23
+            cxx: clang++-23
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Install GCC 16
+        if: matrix.compiler == 'gcc-16'
+        run: sudo apt-get install -y gcc-16 g++-16
+
+      - name: Install Clang 23
+        if: matrix.compiler == 'clang-23'
+        run: |
+          curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
+          sudo apt-get install -y clang-23
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_ROOT }}/installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Bootstrap vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
+          "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.sh" -disableMetrics
+
+      - name: Configure, build and test (dev preset)
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: cmake --workflow --preset dev
+
+  asan-ubsan:
+    name: asan-ubsan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Ninja and Clang 23
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
+          sudo apt-get install -y clang-23
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_ROOT }}/installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Bootstrap vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
+          "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.sh" -disableMetrics
+
+      - name: Configure, build and test (asan-ubsan preset)
+        env:
+          CC: clang-23
+          CXX: clang++-23
+        run: cmake --workflow --preset asan-ubsan
+
+  format:
+    name: format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install clang-format 23
+        run: |
+          curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
+          sudo apt-get install -y clang-format-23
+
+      - name: clang-format --dry-run --Werror
+        run: |
+          find include src tests apps -type f \( -name '*.hpp' -o -name '*.cpp' -o -name '*.h' -o -name '*.cc' \) \
+            -print0 | xargs -0 --no-run-if-empty clang-format-23 --dry-run --Werror
+
+  clang-tidy:
+    name: clang-tidy (changed files)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install Ninja and Clang 23
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build
+          curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
+          sudo apt-get install -y clang-tidy-23
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_ROOT }}/installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Bootstrap vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
+          "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.sh" -disableMetrics
+
+      - name: Configure (dev preset, compile_commands.json only)
+        env:
+          CC: clang-23
+          CXX: clang++-23
+        run: cmake --preset dev
+
+      - name: Run clang-tidy on changed files
+        run: |
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then
+            base=$(git rev-parse HEAD~1)
+          fi
+          git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.cpp' '*.hpp' '*.h' '*.cc' \
+            > changed_files.txt || true
+          if [ -s changed_files.txt ]; then
+            xargs -a changed_files.txt clang-tidy-23 -p build/dev
+          else
+            echo "No changed C++ files."
+          fi

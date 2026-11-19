@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         cmake ninja-build ccache \
         gdb valgrind heaptrack linux-perf strace hyperfine \
         cppcheck doxygen graphviz \
-        python3 python3-venv \
+        python3 python3-venv gh \
     && rm -rf /var/lib/apt/lists/*
 
 # Clang/LLVM from apt.llvm.org (compiler, clangd, clang-tidy, clang-format, lld, lldb, libc++)
@@ -29,9 +29,10 @@ RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /us
            ln -sf /usr/bin/$t-${LLVM_VERSION} /usr/local/bin/$t; done \
     && rm -rf /var/lib/apt/lists/*
 
-# vcpkg (manifest mode in the repo; binary cache lives in a volume)
+# vcpkg (manifest mode in the repo; binary cache lives in a volume).
+# Full clone, not --depth 1: vcpkg needs the history to resolve the builtin-baseline in vcpkg.json
 ENV VCPKG_ROOT=/opt/vcpkg
-RUN git clone --depth 1 https://github.com/microsoft/vcpkg.git ${VCPKG_ROOT} \
+RUN git clone https://github.com/microsoft/vcpkg.git ${VCPKG_ROOT} \
     && ${VCPKG_ROOT}/bootstrap-vcpkg.sh -disableMetrics
 
 # uv for Python versions, virtual environments and tools (pin a version tag in real use)

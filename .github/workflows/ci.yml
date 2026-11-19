@@ -25,7 +25,7 @@ jobs:
     name: build-test (${{ matrix.compiler }})
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/idelfonso/covarray-dev:sha-REPLACE_ME
+      image: ghcr.io/idelfonso/covarray-dev:sha-e5635b0
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -67,7 +67,7 @@ jobs:
     name: asan-ubsan
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/idelfonso/covarray-dev:sha-REPLACE_ME
+      image: ghcr.io/idelfonso/covarray-dev:sha-e5635b0
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -96,7 +96,7 @@ jobs:
     name: format
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/idelfonso/covarray-dev:sha-REPLACE_ME
+      image: ghcr.io/idelfonso/covarray-dev:sha-e5635b0
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-24.04
     continue-on-error: true
     container:
-      image: ghcr.io/idelfonso/covarray-dev:sha-REPLACE_ME
+      image: ghcr.io/idelfonso/covarray-dev:sha-e5635b0
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

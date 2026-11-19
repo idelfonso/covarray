@@ -38,7 +38,7 @@ target_compile_options(
         >
 )
 
-add_library(covarray src/covarray.cpp)
+add_library(covarray src/covarray.cpp src/spec.cpp)
 add_library(covarray::covarray ALIAS covarray)
 
 target_include_directories(

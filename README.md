@@ -1,5 +1,7 @@
 # covarray
 
+[![CI](https://github.com/idelfonso/covarray/actions/workflows/ci.yml/badge.svg)](https://github.com/idelfonso/covarray/actions/workflows/ci.yml)
+
 **covarray** is a library for constructing, verifying and working with
 [covering arrays](https://math.nist.gov/coveringarrays/coveringarray.html), the combinatorial
 designs behind pairwise and t-way software testing. The core is written in modern

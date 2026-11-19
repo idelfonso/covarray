@@ -14,24 +14,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         cmake ninja-build ccache \
         gdb valgrind heaptrack linux-perf strace hyperfine \
         cppcheck doxygen graphviz \
-        python3 python3-venv \
+        python3 python3-venv gh \
     && rm -rf /var/lib/apt/lists/*
 
-# Clang/LLVM from apt.llvm.org (compiler, clangd, clang-tidy, clang-format, lld, lldb, libc++)
+# Clang/LLVM from apt.llvm.org (compiler, clangd, clang-tidy, clang-format, lld, lldb, libc++,
+# and libclang-rt: the sanitizer runtimes that -fsanitize=address,undefined links against)
 RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /usr/share/keyrings/llvm.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/llvm.gpg] http://apt.llvm.org/trixie/ llvm-toolchain-trixie-${LLVM_VERSION} main" \
         > /etc/apt/sources.list.d/llvm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
         clang-${LLVM_VERSION} clangd-${LLVM_VERSION} clang-tidy-${LLVM_VERSION} clang-format-${LLVM_VERSION} \
         lld-${LLVM_VERSION} lldb-${LLVM_VERSION} llvm-${LLVM_VERSION} \
-        libc++-${LLVM_VERSION}-dev libc++abi-${LLVM_VERSION}-dev \
+        libc++-${LLVM_VERSION}-dev libc++abi-${LLVM_VERSION}-dev libclang-rt-${LLVM_VERSION}-dev \
     && for t in clang clang++ clangd clang-tidy clang-format lld lldb llvm-cov llvm-profdata llvm-symbolizer; do \
            ln -sf /usr/bin/$t-${LLVM_VERSION} /usr/local/bin/$t; done \
     && rm -rf /var/lib/apt/lists/*
 
-# vcpkg (manifest mode in the repo; binary cache lives in a volume)
+# vcpkg (manifest mode in the repo; binary cache lives in a volume).
+# Full clone, not --depth 1: vcpkg needs the history to resolve the builtin-baseline in vcpkg.json
 ENV VCPKG_ROOT=/opt/vcpkg
-RUN git clone --depth 1 https://github.com/microsoft/vcpkg.git ${VCPKG_ROOT} \
+RUN git clone https://github.com/microsoft/vcpkg.git ${VCPKG_ROOT} \
     && ${VCPKG_ROOT}/bootstrap-vcpkg.sh -disableMetrics
 
 # uv for Python versions, virtual environments and tools (pin a version tag in real use)

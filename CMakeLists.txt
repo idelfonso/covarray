@@ -11,6 +11,12 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# This project doesn't use C++20 modules; disable Ninja's module dependency
+# scanning so compile_commands.json stays a plain compile command instead of
+# referencing a .modmap response file that only exists after a real build
+# (clang-tidy configures but never builds, so that file is never there).
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
 if(PROJECT_IS_TOP_LEVEL)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()

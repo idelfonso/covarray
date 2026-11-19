@@ -9,132 +9,137 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: read
+
+# Every Linux job runs inside the dev image published by dev-image.yml.
+# To move to a new image: change the tag in all four jobs below in one PR,
+# so CI on that PR proves the new image works before it reaches main.
+
 env:
-  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-cache
 
 jobs:
   build-test:
     name: build-test (${{ matrix.compiler }})
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/idelfonso/covarray-dev:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     strategy:
       fail-fast: false
       matrix:
         include:
           - compiler: gcc-16
-            cc: gcc-16
-            cxx: g++-16
+            cc: gcc
+            cxx: g++
+            cxxflags: ""
           - compiler: clang-23
-            cc: clang-23
-            cxx: clang++-23
+            cc: clang
+            cxx: clang++
+            # Make Clang use GCC 16's libstdc++ from /usr/local, not Debian's older one
+            cxxflags: "--gcc-toolchain=/usr/local"
     steps:
       - uses: actions/checkout@v5
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: Install Ninja
-        run: sudo apt-get update && sudo apt-get install -y ninja-build
-
-      - name: Install GCC 16
-        if: matrix.compiler == 'gcc-16'
-        run: sudo apt-get install -y gcc-16 g++-16
-
-      - name: Install Clang 23
-        if: matrix.compiler == 'clang-23'
-        run: |
-          curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
-          sudo apt-get install -y clang-23
-
-      - name: Cache vcpkg
+      - name: Cache vcpkg binaries
         uses: actions/cache@v4
         with:
-          path: ${{ env.VCPKG_ROOT }}/installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-
-      - name: Bootstrap vcpkg
-        run: |
-          git clone --depth 1 https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
-          "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.sh" -disableMetrics
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: vcpkg-${{ matrix.compiler }}-
 
       - name: Configure, build and test (dev preset)
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: cmake --workflow --preset dev
+          CXXFLAGS: ${{ matrix.cxxflags }}
+        run: |
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          cmake --workflow --preset dev
 
   asan-ubsan:
     name: asan-ubsan
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/idelfonso/covarray-dev:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v5
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: Install Ninja and Clang 23
-        run: |
-          sudo apt-get update && sudo apt-get install -y ninja-build
-          curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
-          sudo apt-get install -y clang-23
-
-      - name: Cache vcpkg
+      - name: Cache vcpkg binaries
         uses: actions/cache@v4
         with:
-          path: ${{ env.VCPKG_ROOT }}/installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-
-      - name: Bootstrap vcpkg
-        run: |
-          git clone --depth 1 https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
-          "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.sh" -disableMetrics
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-asan-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: vcpkg-asan-
 
       - name: Configure, build and test (asan-ubsan preset)
         env:
-          CC: clang-23
-          CXX: clang++-23
-        run: cmake --workflow --preset asan-ubsan
+          CC: clang
+          CXX: clang++
+          CXXFLAGS: --gcc-toolchain=/usr/local
+        run: |
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          cmake --workflow --preset asan-ubsan
 
   format:
     name: format
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/idelfonso/covarray-dev:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v5
-
-      - name: Install clang-format 23
-        run: |
-          curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
-          sudo apt-get install -y clang-format-23
 
       - name: clang-format --dry-run --Werror
         run: |
           find include src tests apps -type f \( -name '*.hpp' -o -name '*.cpp' -o -name '*.h' -o -name '*.cc' \) \
-            -print0 | xargs -0 --no-run-if-empty clang-format-23 --dry-run --Werror
+            -print0 2>/dev/null | xargs -0 --no-run-if-empty clang-format --dry-run --Werror
 
   clang-tidy:
     name: clang-tidy (changed files)
     runs-on: ubuntu-24.04
     continue-on-error: true
+    container:
+      image: ghcr.io/idelfonso/covarray-dev:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: Install Ninja and Clang 23
-        run: |
-          sudo apt-get update && sudo apt-get install -y ninja-build
-          curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s -- 23
-          sudo apt-get install -y clang-tidy-23
-
-      - name: Cache vcpkg
+      - name: Cache vcpkg binaries
         uses: actions/cache@v4
         with:
-          path: ${{ env.VCPKG_ROOT }}/installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-
-      - name: Bootstrap vcpkg
-        run: |
-          git clone --depth 1 https://github.com/microsoft/vcpkg.git "${{ env.VCPKG_ROOT }}"
-          "${{ env.VCPKG_ROOT }}/bootstrap-vcpkg.sh" -disableMetrics
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-clang-23-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: vcpkg-clang-23-
 
       - name: Configure (dev preset, compile_commands.json only)
         env:
-          CC: clang-23
-          CXX: clang++-23
-        run: cmake --preset dev
+          CC: clang
+          CXX: clang++
+          CXXFLAGS: --gcc-toolchain=/usr/local
+        run: |
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          cmake --preset dev
 
       - name: Run clang-tidy on changed files
         run: |
@@ -145,7 +150,7 @@ jobs:
           git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.cpp' '*.hpp' '*.h' '*.cc' \
             > changed_files.txt || true
           if [ -s changed_files.txt ]; then
-            xargs -a changed_files.txt clang-tidy-23 -p build/dev
+            xargs -a changed_files.txt clang-tidy -p build/dev
           else
             echo "No changed C++ files."
           fi

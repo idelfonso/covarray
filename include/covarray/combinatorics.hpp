@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 
 namespace covarray {
@@ -10,9 +11,7 @@ namespace covarray {
     if (k > n) {
         return 0;
     }
-    if (k > n - k) {
-        k = n - k;
-    }
+    k = std::min(k, n - k);
 
     std::uint64_t result = 1;
     for (unsigned i = 0; i < k; ++i) {

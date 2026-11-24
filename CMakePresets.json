@@ -33,12 +33,25 @@
         "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
         "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined"
       }
+    },
+    {
+      "name": "coverage",
+      "displayName": "Coverage (Clang source-based, llvm-cov)",
+      "inherits": "dev",
+      "binaryDir": "${sourceDir}/build/coverage",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_FLAGS": "$env{CXXFLAGS} --gcc-toolchain=/usr/local -fprofile-instr-generate -fcoverage-mapping",
+        "CMAKE_EXE_LINKER_FLAGS": "--gcc-toolchain=/usr/local -fprofile-instr-generate -fcoverage-mapping"
+      }
     }
   ],
   "buildPresets": [
     { "name": "dev", "configurePreset": "dev" },
     { "name": "release", "configurePreset": "release" },
-    { "name": "asan-ubsan", "configurePreset": "asan-ubsan" }
+    { "name": "asan-ubsan", "configurePreset": "asan-ubsan" },
+    { "name": "coverage", "configurePreset": "coverage" }
   ],
   "testPresets": [
     {
@@ -56,6 +69,13 @@
     {
       "name": "asan-ubsan",
       "configurePreset": "asan-ubsan",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "ignore" }
+    },
+    {
+      "name": "coverage",
+      "configurePreset": "coverage",
+      "environment": { "LLVM_PROFILE_FILE": "${sourceDir}/build/coverage/profraw/%p-%m.profraw" },
       "output": { "outputOnFailure": true },
       "execution": { "noTestsAction": "ignore" }
     }
@@ -83,6 +103,14 @@
         { "type": "configure", "name": "asan-ubsan" },
         { "type": "build", "name": "asan-ubsan" },
         { "type": "test", "name": "asan-ubsan" }
+      ]
+    },
+    {
+      "name": "coverage",
+      "steps": [
+        { "type": "configure", "name": "coverage" },
+        { "type": "build", "name": "coverage" },
+        { "type": "test", "name": "coverage" }
       ]
     }
   ]

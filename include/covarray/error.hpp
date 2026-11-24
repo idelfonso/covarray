@@ -11,6 +11,10 @@ enum class ErrorCode : std::uint8_t {
     empty_columns,
     forbidden_tuple_out_of_range,
     seed_row_mismatch,
+    malformed_parameter_line,
+    invalid_symbol,
+    row_count_mismatch,
+    column_count_mismatch,
 };
 
 struct Error {

@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <stdexcept>
+#include <utility>
+
 namespace covarray {
 
 TEST(CoveringArray, StartsZeroFilled) {
@@ -26,6 +29,26 @@ TEST(CoveringArray, ElementAccessReadWrite) {
     EXPECT_EQ((ca[1, 0]), 0);
     EXPECT_EQ((ca[1, 1]), 9);
     EXPECT_EQ((ca[1, 2]), 0);
+}
+
+TEST(CoveringArray, AtMatchesElementAccess) {
+    CoveringArray ca(2, 3);
+    ca[0, 0] = 5;
+    ca.at(1, 2) = 9;
+    EXPECT_EQ(ca.at(0, 0), 5);
+    EXPECT_EQ((ca[1, 2]), 9);
+}
+
+TEST(CoveringArray, AtThrowsOnOutOfRangeRow) {
+    CoveringArray ca(2, 3);
+    EXPECT_THROW(ca.at(2, 0), std::out_of_range);
+    EXPECT_THROW(std::as_const(ca).at(2, 0), std::out_of_range);
+}
+
+TEST(CoveringArray, AtThrowsOnOutOfRangeColumn) {
+    CoveringArray ca(2, 3);
+    EXPECT_THROW(ca.at(0, 3), std::out_of_range);
+    EXPECT_THROW(std::as_const(ca).at(0, 3), std::out_of_range);
 }
 
 TEST(CoveringArray, SupportsSymbolsNear255) {

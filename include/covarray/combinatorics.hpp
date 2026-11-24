@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
-#include <utility>
 #include <vector>
 
 namespace covarray {
@@ -115,7 +114,7 @@ template <typename F> void for_each_combination(std::size_t n, std::size_t t, F&
         combination[i] = i;
     }
     do {
-        std::forward<F>(fn)(std::span<const std::size_t>(combination));
+        fn(std::span<const std::size_t>(combination));
     } while (next_combination(combination, n));
 }
 

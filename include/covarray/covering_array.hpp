@@ -3,8 +3,10 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <mdspan>
 #include <span>
+#include <stdexcept>
 #include <vector>
 
 namespace covarray {
@@ -50,6 +52,19 @@ class CoveringArray {
         return data_[(row * columns_) + column];
     }
 
+    // Bounds-checked cell access: for callers outside the hot path (text
+    // I/O, run once per array) where a bad index should throw instead of
+    // silently reading/writing the wrong cell or invoking UB.
+    auto at(std::size_t row, std::size_t column) -> std::uint8_t& {
+        check_bounds(row, column);
+        return data_[(row * columns_) + column];
+    }
+
+    auto at(std::size_t row, std::size_t column) const -> std::uint8_t {
+        check_bounds(row, column);
+        return data_[(row * columns_) + column];
+    }
+
     [[nodiscard]] auto view() noexcept -> View {
         return View(data_.data(), rows_, columns_);
     }
@@ -83,6 +98,17 @@ class CoveringArray {
     }
 
   private:
+    auto check_bounds(std::size_t row, std::size_t column) const -> void {
+        if (row >= rows_ || column >= columns_) {
+            throw std::out_of_range(
+                std::format(
+                    "CoveringArray::at(row={}, column={}) out of range for a {}x{} array", row,
+                    column, rows_, columns_
+                )
+            );
+        }
+    }
+
     std::size_t rows_;
     std::size_t columns_;
     std::vector<std::uint8_t> data_;

@@ -7,6 +7,7 @@ add_executable(
     covering_array_test.cpp
     error_test.cpp
     spec_test.cpp
+    text_format_test.cpp
 )
 target_link_libraries(
     covarray_tests

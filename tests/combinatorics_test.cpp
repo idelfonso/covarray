@@ -50,7 +50,7 @@ TEST(Binomial, KGreaterThanNIsZero) {
 namespace {
 // `(n, t)` pairs small enough to exhaustively check every rank below.
 constexpr std::array<std::pair<std::size_t, std::size_t>, 5> kCombinationShapes{
-    {{5, 0}, {5, 1}, {5, 3}, {5, 5}, {8, 4}}
+    {{5, 0}, {5, 1}, {5, 3}, {5, 5}, {8, 4}},
 };
 } // namespace
 
@@ -86,7 +86,7 @@ TEST(CombinationIteration, VisitsEveryCombinationExactlyOnceInRankOrder) {
         const auto total = binomial(static_cast<unsigned>(n), static_cast<unsigned>(t));
         std::uint64_t expected_rank = 0;
         std::uint64_t visits = 0;
-        for_each_combination(n, t, [&](std::span<const std::size_t> combination) {
+        for_each_combination(n, t, [&](std::span<const std::size_t> combination) -> void {
             EXPECT_EQ(rank_combination(combination, n), expected_rank) << "n=" << n << " t=" << t;
             ++expected_rank;
             ++visits;
@@ -97,7 +97,7 @@ TEST(CombinationIteration, VisitsEveryCombinationExactlyOnceInRankOrder) {
 
 TEST(CombinationIteration, EmptyWhenTExceedsN) {
     std::uint64_t visits = 0;
-    for_each_combination(3, 5, [&](std::span<const std::size_t>) {
+    for_each_combination(3, 5, [&](std::span<const std::size_t>) -> void {
         ++visits;
     });
     EXPECT_EQ(visits, 0);

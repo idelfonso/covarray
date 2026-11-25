@@ -2,9 +2,8 @@
 
 This note defines the three foundational types for Phase 1 — `Error`,
 `Spec`, and `CoveringArray` — along with the storage layout and ownership
-rules they share. It's the design note for the Mon Nov 23 plan day;
-implementation is tracked by #31 (`Error`), #32 (`Spec`), and #33
-(`CoveringArray`).
+rules they share. Implementation is tracked by #31 (`Error`), #32
+(`Spec`), and #33 (`CoveringArray`).
 
 ## `Error`
 
@@ -28,8 +27,8 @@ struct Error {
 ```
 
 Fallible operations return `std::expected<T, Error>`. The library never
-throws from its own APIs (this becomes ADR-003, "errors as values", on Fri
-Nov 27).
+throws from its own APIs — see
+[ADR-003, "errors as values"](../adr/0003-errors-as-values.md).
 
 ## `Spec`
 
@@ -44,7 +43,7 @@ Describes the covering array to construct:
 - `seed_rows`: optional rows the construction must extend rather than
   overwrite.
 
-Validation (Tue Nov 24) returns `std::expected<Spec, Error>`, checking:
+Validation returns `std::expected<Spec, Error>`, checking:
 `t >= 2`, `t <= k` (number of columns), every level in `[2, 255]`, every
 forbidden tuple references valid columns and in-range values, and every
 seed row matches the column count and each column's level range.
@@ -75,8 +74,8 @@ the owned buffer:
 Column-major is **not** the default and is not being built now. It's
 called out here only because it was an actual candidate for Phase 1's
 storage layout, and it's explicitly deferred: it may be introduced later as
-an alternative layout for the verification kernels specifically (Wed Dec 2,
-#13), and only if a benchmark comparing row-major vs. column-major access
+an alternative layout for the verification kernels specifically (#13), and
+only if a benchmark comparing row-major vs. column-major access
 for that workload shows a clear, reproducible speedup. The `mdspan`-based
 view API is what makes that possible without changing `CoveringArray`'s
 public interface: a verification-only kernel could operate over a
@@ -93,14 +92,13 @@ differently-laid-out buffer behind the same view abstractions.
 ## Open questions
 
 - **Row-major vs. column-major verification benchmark — resolved, kept
-  row-major (Tue Nov 24, #13).** Methodology: a one-off `std::chrono`
-  timing comparison (not Google Benchmark — that's a later day's
+  row-major (#13).** Methodology: a one-off `std::chrono` timing
+  comparison (not Google Benchmark — that's separate, later
   infrastructure), running the index verifier's actual kernel (one
   bitset-marking pass per t-subset of columns, over every row) against
   two storages holding the same random data — the real row-major
   `CoveringArray`, and a column-major buffer built behind the identical
-  gather loop. Two fixed instances, matching `plan/GENERAL.md`'s
-  performance-measurement examples (`N` picked arbitrarily at 500, since
+  gather loop. Two fixed instances (`N` picked arbitrarily at 500, since
   no construction method exists yet to produce a real minimal-`N`
   array): best-of-3, release optimizations, results stable within <1%
   across repeated runs.
@@ -118,10 +116,10 @@ differently-laid-out buffer behind the same view abstractions.
   "only if a benchmark ... shows a clear, reproducible speedup" — since
   it isn't clear, only reproducible. **Decision: `CoveringArray` stays
   row-major; no column-major path is added.** Revisit only if a cost
-  model (`plan/GENERAL.md`'s "a cost model fitted to benchmark data picks
-  the kernel") becomes worth building for other reasons, at which point
-  this split could inform which layout that model picks per instance
-  shape — not as a decision to make today.
+  model that picks the verification kernel per instance shape becomes
+  worth building for other reasons, at which point this split could
+  inform which layout that model picks per instance shape — not as a
+  decision to make today.
 - `ErrorCode`'s full enumeration will likely grow as later days add fallible
   operations (parsing, construction); the list above covers only what
   `Spec` validation needs.

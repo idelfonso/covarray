@@ -8,8 +8,8 @@ designs behind pairwise and t-way software testing. The core is written in moder
 C++23, with a Python package on top, a command-line tool and, later, a
 network API.
 
-> **Status: early development.** The repository is being set up; there is nothing
-> to install or use yet. The roadmap below shows what is coming and when.
+> **Status: early development.** The CLI's `verify`/`info` subcommands are usable
+> (see Usage below); most of the library and roadmap items are still being built.
 
 ## Goals
 
@@ -22,6 +22,40 @@ network API.
   a CLI and a service API.
 - **Engineer it properly:** tests, sanitizers, static analysis and measured
   performance from day one.
+
+## Usage
+
+Build the CLI with the `dev` preset:
+
+```bash
+cmake --preset dev
+cmake --build build/dev --target covarray_cli
+```
+
+This produces `build/dev/apps/cli/covarray`.
+
+`covarray verify` checks a covering array file against its own declared
+strength, or an override:
+
+```bash
+covarray verify data/ipogf/t3_v2_k6_N14.txt
+covarray verify data/ipogf/t3_v2_k6_N14.txt -t 2            # check against a different strength
+covarray verify data/ipogf/t3_v2_k6_N14.txt --fast          # stop at the first missing tuple
+covarray verify data/ipogf/t3_v2_k6_N14.txt -o missing.txt  # write every missing tuple to a file
+```
+
+`covarray info` prints a file's N, k, t and levels:
+
+```bash
+covarray info data/ipogf/t3_v2_k6_N14.txt
+```
+
+Supported file formats are `.txt`, `.csv`, `.json` and `.bin`, dispatched
+by extension (see `docs/design/ca-file-format.md` for the text format).
+Exit codes: `0` fully covering, `1` not covering, `2` usage error, `3`
+file/parse error. Run `covarray <subcommand> --help` for the full option
+list.
+
 ## Roadmap
 
 | Phase | Target release | Focus |
@@ -45,6 +79,23 @@ and the [milestones](https://github.com/idelfonso/covarray/milestones).
 The project is developed in a VS Code dev container (see `.devcontainer/`), which
 provides GCC 16, Clang 23, CMake, Ninja and the rest of the toolchain. Build and
 test instructions will be added here as soon as the first code lands.
+
+## Documentation
+
+Architecture decisions and file-format specs live under `docs/`:
+
+- [ADR-001: Monorepo](docs/adr/0001-monorepo.md) — why the C++ core, Python
+  bindings, CLI, and future services all live in this one repository.
+- [ADR-002: Toolchain and dependency policy](docs/adr/0002-toolchain-and-dependency-policy.md) —
+  compilers, build system, and how a new C++ dependency gets added.
+- [ADR-003: Errors as values](docs/adr/0003-errors-as-values.md) — why no
+  covarray API throws.
+- [Core types](docs/design/core-types.md) — `Error`, `Spec`, and
+  `CoveringArray`'s storage layout and ownership rules.
+- [Covering array text file format](docs/design/ca-file-format.md) — the
+  `.txt`/`.csv` grammar, comments, and wildcard conventions.
+- [Covering array binary file format](docs/design/ca-binary-format.md) —
+  the versioned `.bin` layout.
 
 ## Contributing
 

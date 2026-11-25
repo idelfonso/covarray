@@ -19,7 +19,16 @@ cmake --workflow --preset dev
 ```
 
 Other presets: `release`, `asan-ubsan` (run this one before opening a PR —
-CI requires it to pass).
+CI requires it to pass), `coverage`, `fuzz` (see `fuzz/README.md`).
+
+**Clang note:** if a preset resolves to Clang instead of GCC on your
+machine, it needs `--gcc-toolchain=/usr/local` in its `CMAKE_CXX_FLAGS`/
+`CMAKE_EXE_LINKER_FLAGS`. Without it, Clang falls back to Debian's older
+system libstdc++, which is missing a working `<mdspan>`, and the build
+fails with `'mdspan' file not found`. CI's `clang-23` job and the
+`coverage`/`fuzz` presets already pass this flag; `asan-ubsan` currently
+doesn't, since it doesn't pin a compiler — whether you hit this depends
+on which compiler CMake's default search resolves to on your system.
 
 ## Before opening a PR
 

@@ -70,3 +70,15 @@ deterministic run, no fuzzing) with:
 ```bash
 ./build/fuzz/fuzz/covarray_fuzz_text_format /tmp/fuzz_artifacts/crash-<hash>
 ```
+
+## Findings
+
+The first 10-minute run on `text_format_fuzzer.cpp` found a real bug: a
+level-spec token with an attacker-controlled count far larger than any
+real file would use, e.g. `2^9999999999999993` (that count is a 16-digit
+number, ~10^16), made `parse_level_spec_tokens` try to grow its output
+vector by that many elements before anything checked it against the
+declared column count — an allocation-size-too-big abort instead of an
+ordinary parse error. Fixed by bounding the running total against the
+declared column count as each token is parsed (`src/format_support.cpp`);
+a regression test lives in `tests/text_format_test.cpp`.

@@ -17,6 +17,12 @@
 // it isn't installed.
 namespace covarray::format_support {
 
+// For an unsigned `T`, `std::from_chars` doesn't accept a leading `-` at
+// all -- the standard only permits that for a signed `T` -- so a token
+// like "-4" consumes zero characters and fails here, rather than parsing
+// and wrapping around to a huge unsigned value. This is what protects
+// every numeric header field (N, k, t, and a level-spec's `v`/`c`) across
+// every file format from negative numbers, with no separate check needed.
 template <class T> [[nodiscard]] auto parse_unsigned(std::string_view token) -> std::optional<T> {
     T value{};
     const auto* end = token.data() + token.size();

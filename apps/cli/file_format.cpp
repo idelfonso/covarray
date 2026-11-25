@@ -56,6 +56,10 @@ auto read_covering_array_file(const std::string& path)
         return std::unexpected(std::format("cannot read file: {}", path));
     }
 
+    // An immediately-invoked lambda, so the extension dispatch reads as
+    // one expression and `parsed` is initialized exactly once -- rather
+    // than default-constructed and reassigned in whichever branch below
+    // actually runs.
     auto parsed = [&] -> std::expected<ParsedCoveringArray, Error> {
         if (extension == "txt") {
             return read_text_format(*bytes);

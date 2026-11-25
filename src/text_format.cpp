@@ -105,7 +105,7 @@ struct ParameterLine {
 
     const auto spec_tokens =
         std::span<const std::string_view>(tokens).subspan(2, tokens.size() - 3);
-    auto levels = parse_level_spec_tokens(spec_tokens);
+    auto levels = parse_level_spec_tokens(spec_tokens, *columns);
     if (!levels) {
         return std::unexpected(levels.error());
     }

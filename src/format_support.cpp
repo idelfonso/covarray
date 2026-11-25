@@ -11,7 +11,7 @@ auto malformed(std::string message) -> std::unexpected<Error> {
     );
 }
 
-auto parse_level_spec_tokens(std::span<const std::string_view> spec_tokens)
+auto parse_level_spec_tokens(std::span<const std::string_view> spec_tokens, std::size_t columns)
     -> std::expected<std::vector<std::uint8_t>, Error> {
     std::vector<std::uint8_t> levels;
     for (const auto spec_token : spec_tokens) {
@@ -23,6 +23,11 @@ auto parse_level_spec_tokens(std::span<const std::string_view> spec_tokens)
         const auto count = parse_unsigned<std::size_t>(spec_token.substr(caret + 1));
         if (!level || !count || *level > 255) {
             return malformed(std::format("malformed level spec '{}'", spec_token));
+        }
+        if (*count > columns - levels.size()) {
+            return malformed(
+                std::format("level spec covers more than the declared {} columns", columns)
+            );
         }
         levels.insert(levels.end(), *count, static_cast<std::uint8_t>(*level));
     }

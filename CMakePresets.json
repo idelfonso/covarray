@@ -45,13 +45,29 @@
         "CMAKE_CXX_FLAGS": "$env{CXXFLAGS} --gcc-toolchain=/usr/local -fprofile-instr-generate -fcoverage-mapping",
         "CMAKE_EXE_LINKER_FLAGS": "--gcc-toolchain=/usr/local -fprofile-instr-generate -fcoverage-mapping"
       }
+    },
+    {
+      "name": "fuzz",
+      "displayName": "libFuzzer harnesses (Clang)",
+      "inherits": "dev",
+      "binaryDir": "${sourceDir}/build/fuzz",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_FLAGS": "$env{CXXFLAGS} --gcc-toolchain=/usr/local -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "--gcc-toolchain=/usr/local -fsanitize=address,undefined",
+        "COVARRAY_BUILD_TESTS": "OFF",
+        "COVARRAY_BUILD_CLI": "OFF",
+        "COVARRAY_BUILD_FUZZERS": "ON"
+      }
     }
   ],
   "buildPresets": [
     { "name": "dev", "configurePreset": "dev" },
     { "name": "release", "configurePreset": "release" },
     { "name": "asan-ubsan", "configurePreset": "asan-ubsan" },
-    { "name": "coverage", "configurePreset": "coverage" }
+    { "name": "coverage", "configurePreset": "coverage" },
+    { "name": "fuzz", "configurePreset": "fuzz" }
   ],
   "testPresets": [
     {

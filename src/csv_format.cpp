@@ -131,7 +131,7 @@ struct HeaderLine {
     for (const auto& field : std::span<const Field>(fields).subspan(2, fields.size() - 3)) {
         spec_tokens.push_back(field.text);
     }
-    auto levels = parse_level_spec_tokens(spec_tokens);
+    auto levels = parse_level_spec_tokens(spec_tokens, *columns);
     if (!levels) {
         return std::unexpected(levels.error());
     }

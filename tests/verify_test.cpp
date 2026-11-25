@@ -94,7 +94,56 @@ void expect_same_result(const VerificationResult& a, const VerificationResult& b
     }
 }
 
+// Column 2 is a wildcard in every row (value == its level, 2): per
+// docs/design/ca-file-format.md, that column is never used to cover any
+// tuple, so any subset including it is 0% covered while {0,1} alone is
+// still fully covered by the first 4 rows.
+[[nodiscard]] auto make_array_with_a_wildcard_column() -> CoveringArray {
+    CoveringArray array(4, 3);
+    const std::array<std::array<std::uint8_t, 3>, 4> rows{
+        {{0, 0, 2}, {0, 1, 2}, {1, 0, 2}, {1, 1, 2}}
+    };
+    for (std::size_t r = 0; r < 4; ++r) {
+        for (std::size_t c = 0; c < 3; ++c) {
+            array[r, c] = rows[r][c];
+        }
+    }
+    return array;
+}
+
 } // namespace
+
+TEST(Verify, IndexDoesNotCrashOnAWildcardCellAndExcludesItsSubsetsFromCoverage) {
+    auto spec = Spec::create(2, {2, 2, 2});
+    ASSERT_TRUE(spec.has_value());
+    const auto array = make_array_with_a_wildcard_column();
+
+    const auto result = verify_index(array, *spec);
+    EXPECT_EQ(result.missing.size(), 8); // all 2*2*2 tuples over {0,2} and {1,2}
+    EXPECT_FALSE(contains_missing_tuple(result.missing, {0, 1}, {0, 0}));
+    EXPECT_TRUE(contains_missing_tuple(result.missing, {0, 2}, {0, 0}));
+    EXPECT_TRUE(contains_missing_tuple(result.missing, {1, 2}, {0, 0}));
+}
+
+TEST(Verify, ReferenceAndIndexAgreeOnAWildcardCell) {
+    auto spec = Spec::create(2, {2, 2, 2});
+    ASSERT_TRUE(spec.has_value());
+    const auto array = make_array_with_a_wildcard_column();
+
+    const auto reference = verify_reference(array, *spec);
+    const auto index = verify_index(array, *spec);
+    expect_same_result(reference, index);
+}
+
+TEST(Verify, FastDoesNotCrashOnAWildcardCell) {
+    auto spec = Spec::create(2, {2, 2, 2});
+    ASSERT_TRUE(spec.has_value());
+    const auto array = make_array_with_a_wildcard_column();
+
+    const auto result = verify_fast(array, *spec);
+    ASSERT_FALSE(result.is_covering());
+    EXPECT_EQ(result.first_missing->columns, (std::vector<std::size_t>{0, 2}));
+}
 
 TEST(Verify, ReferenceFindsFullCoverage) {
     auto spec = Spec::create(2, {2, 2, 2});

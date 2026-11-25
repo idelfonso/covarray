@@ -2,6 +2,7 @@
 
 #include "covarray/covering_array.hpp"
 #include "covarray/error.hpp"
+#include "covarray/parsed_covering_array.hpp"
 #include "covarray/spec.hpp"
 
 #include <expected>
@@ -10,18 +11,12 @@
 
 namespace covarray {
 
-// A covering array read from the plain-text matrix format, together with
-// the strength and per-column levels its parameter line declared (see
+// Parses `text` as a covering array text file (see
 // docs/design/ca-file-format.md for the grammar this is read against).
-struct ParsedCoveringArray {
-    CoveringArray array;
-    Spec spec;
-};
-
-// Parses `text` as a covering array text file. Mixed-level columns are
-// reordered into decreasing-level order (a stable sort, so columns
-// sharing a level keep their relative order in `text`), matching the
-// format's own output convention regardless of the order `text` used.
+// Mixed-level columns are reordered into decreasing-level order (a
+// stable sort, so columns sharing a level keep their relative order in
+// `text`), matching the format's own output convention regardless of the
+// order `text` used.
 // Rejects the whole file — never a partial load — on a malformed
 // parameter line, an invalid cell symbol, or a row/column count that
 // doesn't match the declared N/k.

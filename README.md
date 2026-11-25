@@ -5,7 +5,7 @@
 **covarray** is a library for constructing, verifying and working with
 [covering arrays](https://math.nist.gov/coveringarrays/coveringarray.html), the combinatorial
 designs behind pairwise and t-way software testing. The core is written in modern
-C++ (C++23), with a Python package on top, a command-line tool and, later, a
+C++23, with a Python package on top, a command-line tool and, later, a
 network API.
 
 > **Status: early development.** The repository is being set up; there is nothing

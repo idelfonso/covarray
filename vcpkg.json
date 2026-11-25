@@ -4,6 +4,9 @@
   "dependencies": [
     {
       "name": "gtest"
+    },
+    {
+      "name": "nlohmann-json"
     }
   ]
 }

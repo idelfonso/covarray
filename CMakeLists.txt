@@ -70,3 +70,17 @@ if(COVARRAY_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+option(COVARRAY_BUILD_CLI "Build the covarray command-line tool" ${PROJECT_IS_TOP_LEVEL})
+if(COVARRAY_BUILD_CLI)
+    add_subdirectory(apps/cli)
+endif()
+
+# Off by default: a libFuzzer harness needs Clang and -fsanitize=fuzzer,
+# which isn't a flag the other targets (gtest executables, the CLI) can
+# share -- libFuzzer supplies its own main(), which collides with
+# theirs. The `fuzz` preset builds only the library and this directory.
+option(COVARRAY_BUILD_FUZZERS "Build libFuzzer harnesses (requires Clang)" OFF)
+if(COVARRAY_BUILD_FUZZERS)
+    add_subdirectory(fuzz)
+endif()

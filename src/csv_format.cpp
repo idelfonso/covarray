@@ -60,7 +60,10 @@ struct Line {
 // Splits `text` into non-blank lines, each with its real file line
 // number; blank lines (including a trailing one from a final newline)
 // are dropped, never counted as content, but still advance the count so
-// line numbers stay accurate.
+// line numbers stay accurate. Hand-rolled rather than `std::views::split`
+// because `line_number` has to advance in lockstep with the scan even for
+// a dropped blank line -- a views pipeline would need its own counter
+// zipped in anyway, so there's nothing to gain by routing through one.
 [[nodiscard]] auto content_lines(std::string_view text) -> std::vector<Line> {
     std::vector<Line> lines;
     std::size_t pos = 0;
@@ -131,7 +134,7 @@ struct HeaderLine {
     for (const auto& field : std::span<const Field>(fields).subspan(2, fields.size() - 3)) {
         spec_tokens.push_back(field.text);
     }
-    auto levels = parse_level_spec_tokens(spec_tokens);
+    auto levels = parse_level_spec_tokens(spec_tokens, *columns);
     if (!levels) {
         return std::unexpected(levels.error());
     }

@@ -54,6 +54,11 @@ auto verify_reference(const CoveringArray& array, const Spec& spec) -> Verificat
                 for (std::size_t r = 0; r < rows && !covered; ++r) {
                     bool row_matches = true;
                     for (std::size_t i = 0; i < columns.size(); ++i) {
+                        // `values[i]` is always `< subset_levels[i]` (from
+                        // `unrank_tuple`), so a wildcard cell (value ==
+                        // level) never matches here — a wildcard row
+                        // correctly never covers any tuple for a subset
+                        // that includes it, with no separate check needed.
                         if (array[r, columns[i]] != values[i]) {
                             row_matches = false;
                             break;
@@ -90,8 +95,18 @@ auto verify_index(const CoveringArray& array, const Spec& spec) -> VerificationR
             std::vector<bool> covered(total_for_subset, false);
             std::vector<std::uint8_t> row_values(columns.size());
             for (std::size_t r = 0; r < rows; ++r) {
+                bool has_wildcard = false;
                 for (std::size_t i = 0; i < columns.size(); ++i) {
                     row_values[i] = array[r, columns[i]];
+                    has_wildcard |= row_values[i] >= subset_levels[i];
+                }
+                // A wildcard cell (value == that column's level) isn't used
+                // to cover any tuple drawn from this subset (see
+                // docs/design/ca-file-format.md, "Alphabet"); skip the row
+                // for this subset rather than feed `rank_tuple` a value
+                // outside its `values[i] < levels[i]` precondition.
+                if (has_wildcard) {
+                    continue;
                 }
                 covered[rank_tuple(subset_levels, row_values)] = true;
             }
@@ -140,8 +155,14 @@ auto verify_fast(const CoveringArray& array, const Spec& spec) -> FastVerificati
         std::uint64_t covered_count = 0;
         std::vector<std::uint8_t> row_values(columns.size());
         for (std::size_t r = 0; r < rows && covered_count < total_for_subset; ++r) {
+            bool has_wildcard = false;
             for (std::size_t i = 0; i < columns.size(); ++i) {
                 row_values[i] = array[r, columns[i]];
+                has_wildcard |= row_values[i] >= subset_levels[i];
+            }
+            // Same wildcard exclusion as `verify_index` (see there).
+            if (has_wildcard) {
+                continue;
             }
             const auto index = rank_tuple(subset_levels, row_values);
             if (!covered[index]) {

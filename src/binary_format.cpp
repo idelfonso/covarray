@@ -21,6 +21,10 @@ constexpr std::size_t kHeaderSize = 4 + 1 + 8 + 8 + 4; // magic + version + N + 
 
 // Little-endian on disk regardless of host endianness; byte-swapping is
 // its own inverse, so the same helper serves both directions.
+// `std::bit_cast` reinterprets the byte array's bits as `T` directly
+// (legal here since both are trivially copyable and the same size) —
+// unlike `reinterpret_cast`, it doesn't alias the same storage as two
+// different types, so there's no strict-aliasing UB to worry about.
 template <class T>
 [[nodiscard]] auto read_little_endian(std::string_view bytes, std::size_t offset) -> T {
     std::array<char, sizeof(T)> buffer{};
@@ -63,6 +67,12 @@ auto read_binary_format(std::string_view bytes) -> std::expected<ParsedCoveringA
     const auto columns = read_little_endian<std::uint64_t>(bytes, 13);
     const auto strength = read_little_endian<std::uint32_t>(bytes, 21);
 
+    // `rows` and `columns` are untrusted uint64_t values straight from the
+    // file; this assumes `rows * columns` doesn't overflow uint64_t rather
+    // than checking it, unlike the text format's level-spec count (see
+    // format_support.cpp) which was fixed to bound its own untrusted count
+    // after the fuzzer found an allocation-size crash there. This reader
+    // has no fuzz target yet, so that assumption hasn't been exercised.
     const auto levels_offset = kHeaderSize;
     const auto data_offset = levels_offset + columns;
     const auto expected_size = data_offset + (rows * columns);

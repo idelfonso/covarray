@@ -37,6 +37,10 @@ namespace {
 
 // Splits `text` into lines with comments stripped and blank lines
 // dropped: every line this returns is real parameter/data content.
+// A plain loop over `find('\n')`, not `std::views::split`, since each
+// line still needs its own stripping (comment removal, then a blank
+// check) before it's kept or dropped -- keeping the scan explicit avoids
+// turning a single linear pass into a multi-stage views pipeline.
 [[nodiscard]] auto content_lines(std::string_view text) -> std::vector<std::string_view> {
     std::vector<std::string_view> lines;
     std::size_t pos = 0;
@@ -105,7 +109,7 @@ struct ParameterLine {
 
     const auto spec_tokens =
         std::span<const std::string_view>(tokens).subspan(2, tokens.size() - 3);
-    auto levels = parse_level_spec_tokens(spec_tokens);
+    auto levels = parse_level_spec_tokens(spec_tokens, *columns);
     if (!levels) {
         return std::unexpected(levels.error());
     }

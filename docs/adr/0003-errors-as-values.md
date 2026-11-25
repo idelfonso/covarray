@@ -40,8 +40,8 @@ Composing fallible calls uses early return on `!result`
 (`if (auto r = f(); !r) { return std::unexpected(r.error()); }`) throughout
 today's code rather than `std::expected`'s monadic `and_then`/`transform`/
 `or_else`; nothing currently chains enough fallible steps to make the
-monadic form clearly more readable, but it's the planned style per
-`plan/GENERAL.md` once `solve()` and the construction pipeline exist.
+monadic form clearly more readable, but it's the planned style once
+`solve()` and the construction pipeline exist.
 
 ## Consequences
 
@@ -51,8 +51,8 @@ monadic form clearly more readable, but it's the planned style per
 - Every fallible call site is visibly fallible at the type level — callers
   can't accidentally ignore a failure the way an uncaught exception six
   frames up could.
-- `plan/GENERAL.md` also calls for a stack trace in debug builds
-  (`std::stacktrace`); `Error` doesn't carry one yet. That's deferred until
+- A stack trace in debug builds (`std::stacktrace`) is planned for
+  `Error`, which doesn't carry one yet. That's deferred until
   a call site exists where it earns its cost, not designed in speculatively
   now.
 - `std::bad_alloc` and friends are explicitly out of scope: this ADR is

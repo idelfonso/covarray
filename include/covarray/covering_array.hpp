@@ -43,6 +43,9 @@ class CoveringArray {
         return columns_;
     }
 
+    // `array[r, c]` is C++23's multidimensional subscript operator: before
+    // C++23, `operator[]` could only ever take one argument, so this
+    // overload (and its const twin below) wouldn't have compiled.
     [[nodiscard]] auto operator[](std::size_t row, std::size_t column) noexcept -> std::uint8_t& {
         return data_[(row * columns_) + column];
     }
@@ -83,6 +86,10 @@ class CoveringArray {
     }
 
     // A strided view of one column's `rows()` values (stride = columns()).
+    // `mapping_type`'s constructor takes the view's extents, then its
+    // strides; the one-element `{columns_}` array below *is* the stride,
+    // i.e. "advance this many elements in the owning buffer to reach the
+    // next row of this same column."
     [[nodiscard]] auto column(std::size_t index) noexcept -> ColumnView {
         return ColumnView(
             data_.data() + index,

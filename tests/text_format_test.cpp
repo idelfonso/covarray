@@ -153,4 +153,13 @@ TEST(TextFormat, NonNumericSymbolIsRejected) {
     EXPECT_EQ(parsed.error().code, ErrorCode::invalid_symbol);
 }
 
+// A level spec whose count wildly overshoots the declared column count
+// (found by the text-format fuzzer) used to attempt a multi-exabyte
+// allocation before the column-count check ever ran.
+TEST(TextFormat, LevelSpecCountFarExceedingColumnsIsRejectedWithoutHugeAllocation) {
+    auto parsed = read_text_format("4 3 2^9999999999999993 4\n0 0 0\n0 1 1\n1 0 1\n1 1 0\n");
+    ASSERT_FALSE(parsed.has_value());
+    EXPECT_EQ(parsed.error().code, ErrorCode::malformed_parameter_line);
+}
+
 } // namespace covarray

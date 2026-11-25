@@ -69,3 +69,6 @@ Testing/
 
 # local planning notes
 plan/
+
+# downloaded sample data, not part of the source tree
+data/

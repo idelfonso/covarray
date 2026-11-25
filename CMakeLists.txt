@@ -70,3 +70,8 @@ if(COVARRAY_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+option(COVARRAY_BUILD_CLI "Build the covarray command-line tool" ${PROJECT_IS_TOP_LEVEL})
+if(COVARRAY_BUILD_CLI)
+    add_subdirectory(apps/cli)
+endif()

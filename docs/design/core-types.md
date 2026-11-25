@@ -92,8 +92,36 @@ differently-laid-out buffer behind the same view abstractions.
 
 ## Open questions
 
-- The exact benchmark methodology for the row-major vs. column-major
-  verification comparison is decided on Wed Dec 2 (#13), not here.
+- **Row-major vs. column-major verification benchmark — resolved, kept
+  row-major (Tue Nov 24, #13).** Methodology: a one-off `std::chrono`
+  timing comparison (not Google Benchmark — that's a later day's
+  infrastructure), running the index verifier's actual kernel (one
+  bitset-marking pass per t-subset of columns, over every row) against
+  two storages holding the same random data — the real row-major
+  `CoveringArray`, and a column-major buffer built behind the identical
+  gather loop. Two fixed instances, matching `plan/GENERAL.md`'s
+  performance-measurement examples (`N` picked arbitrarily at 500, since
+  no construction method exists yet to produce a real minimal-`N`
+  array): best-of-3, release optimizations, results stable within <1%
+  across repeated runs.
+
+  | Instance | Row-major | Column-major | Row-major is |
+  | --- | --- | --- | --- |
+  | CA(500; 3, 100, 3) | 310 ms | 328 ms | ~6% faster |
+  | CA(500; 6, 30, 2) | 2391 ms | 1943 ms | ~19% **slower** |
+
+  The result is reproducible but **mixed**, not a clean win either way:
+  many-small-subsets workloads (low `t`, high `k`) favor row-major
+  (scattered-but-nearby reads within one row beat a stride-`N` jump per
+  column); few-larger-subsets workloads (higher `t`, lower `k`) favor
+  column-major. That doesn't clear the bar this note already set —
+  "only if a benchmark ... shows a clear, reproducible speedup" — since
+  it isn't clear, only reproducible. **Decision: `CoveringArray` stays
+  row-major; no column-major path is added.** Revisit only if a cost
+  model (`plan/GENERAL.md`'s "a cost model fitted to benchmark data picks
+  the kernel") becomes worth building for other reasons, at which point
+  this split could inform which layout that model picks per instance
+  shape — not as a decision to make today.
 - `ErrorCode`'s full enumeration will likely grow as later days add fallible
   operations (parsing, construction); the list above covers only what
   `Spec` validation needs.

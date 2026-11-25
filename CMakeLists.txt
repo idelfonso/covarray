@@ -38,7 +38,20 @@ target_compile_options(
         >
 )
 
-add_library(covarray src/covarray.cpp src/spec.cpp src/text_format.cpp)
+find_package(nlohmann_json CONFIG REQUIRED)
+
+add_library(
+    covarray
+    src/covarray.cpp
+    src/spec.cpp
+    src/format_support.cpp
+    src/text_format.cpp
+    src/csv_format.cpp
+    src/json_format.cpp
+    src/binary_format.cpp
+    src/verify.cpp
+    src/verify_report.cpp
+)
 add_library(covarray::covarray ALIAS covarray)
 
 target_include_directories(
@@ -47,7 +60,10 @@ target_include_directories(
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 target_compile_features(covarray PUBLIC cxx_std_23)
-target_link_libraries(covarray PRIVATE covarray_warnings)
+# nlohmann_json is an implementation detail of json_format.cpp, never
+# named in a public header, so it stays PRIVATE: consumers of
+# covarray::covarray don't need it on their own include path.
+target_link_libraries(covarray PRIVATE covarray_warnings nlohmann_json::nlohmann_json)
 
 option(COVARRAY_BUILD_TESTS "Build tests" ${PROJECT_IS_TOP_LEVEL})
 if(COVARRAY_BUILD_TESTS)

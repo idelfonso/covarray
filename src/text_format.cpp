@@ -1,15 +1,16 @@
 #include "covarray/text_format.hpp"
 
-#include <algorithm>
 #include <cctype>
-#include <charconv>
 #include <cstdint>
 #include <format>
-#include <optional>
 #include <span>
 #include <vector>
 
+#include "format_support.hpp"
+
 namespace covarray {
+
+using namespace format_support;
 
 namespace {
 
@@ -32,12 +33,6 @@ namespace {
         return false;
     }
     return start + 1 < line.size() && (line[start + 1] == ' ' || line[start + 1] == '\t');
-}
-
-// True for a line with nothing but spaces/tabs (or nothing at all), after
-// comment stripping — such lines are dropped, never counted as content.
-[[nodiscard]] auto is_blank(std::string_view line) -> bool {
-    return line.find_first_not_of(" \t") == std::string_view::npos;
 }
 
 // Splits `text` into lines with comments stripped and blank lines
@@ -80,22 +75,6 @@ namespace {
     return tokens;
 }
 
-template <class T> [[nodiscard]] auto parse_unsigned(std::string_view token) -> std::optional<T> {
-    T value{};
-    const auto* end = token.data() + token.size();
-    const auto result = std::from_chars(token.data(), end, value);
-    if (result.ec != std::errc{} || result.ptr != end) {
-        return std::nullopt;
-    }
-    return value;
-}
-
-[[nodiscard]] auto malformed(std::string message) -> std::unexpected<Error> {
-    return std::unexpected(
-        Error{.code = ErrorCode::malformed_parameter_line, .message = std::move(message)}
-    );
-}
-
 struct ParameterLine {
     std::size_t rows;
     std::vector<std::uint8_t> levels; // one entry per column, in file order
@@ -124,44 +103,22 @@ struct ParameterLine {
         return malformed(std::format("invalid strength '{}'", tokens.back()));
     }
 
-    std::vector<std::uint8_t> levels;
-    levels.reserve(*columns);
-    for (std::size_t i = 2; i + 1 < tokens.size(); ++i) {
-        const auto spec_token = tokens[i];
-        const auto caret = spec_token.find('^');
-        if (caret == std::string_view::npos) {
-            return malformed(std::format("malformed level spec '{}'", spec_token));
-        }
-        const auto level = parse_unsigned<unsigned>(spec_token.substr(0, caret));
-        const auto count = parse_unsigned<std::size_t>(spec_token.substr(caret + 1));
-        if (!level || !count || *level > 255) {
-            return malformed(std::format("malformed level spec '{}'", spec_token));
-        }
-        levels.insert(levels.end(), *count, static_cast<std::uint8_t>(*level));
+    const auto spec_tokens =
+        std::span<const std::string_view>(tokens).subspan(2, tokens.size() - 3);
+    auto levels = parse_level_spec_tokens(spec_tokens);
+    if (!levels) {
+        return std::unexpected(levels.error());
     }
-    if (levels.size() != *columns) {
+    if (levels->size() != *columns) {
         return malformed(
             std::format(
-                "level spec covers {} columns, but the parameter line declares {}", levels.size(),
+                "level spec covers {} columns, but the parameter line declares {}", levels->size(),
                 *columns
             )
         );
     }
 
-    return ParameterLine{.rows = *rows, .levels = std::move(levels), .strength = *strength};
-}
-
-// Stable order that sorts column indices by decreasing level.
-[[nodiscard]] auto decreasing_level_order(std::span<const std::uint8_t> levels)
-    -> std::vector<std::size_t> {
-    std::vector<std::size_t> order(levels.size());
-    for (std::size_t i = 0; i < order.size(); ++i) {
-        order[i] = i;
-    }
-    std::ranges::stable_sort(order, [&](std::size_t a, std::size_t b) -> bool {
-        return levels[a] > levels[b];
-    });
-    return order;
+    return ParameterLine{.rows = *rows, .levels = std::move(*levels), .strength = *strength};
 }
 
 } // namespace
